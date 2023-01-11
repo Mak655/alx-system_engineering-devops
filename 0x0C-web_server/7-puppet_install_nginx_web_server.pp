@@ -1,43 +1,25 @@
-# configure nginx server to listen to port 80
-# with permanent redirect for /redirect_me and handle
-# custom error 404 page
-
-exec {'apt-get-update':
-  command => '/usr/bin/apt-get update'
-}
+# Script to install nginx using puppet
 
 package {'nginx':
-  ensure  => 'installed',
-  require => Exec['apt-get-update'],
+  ensure => 'present',
 }
 
-file {'/var/www/html/index.html':
-  ensure  => 'present',
-  content => 'Holberton School',
-  require => Package['nginx']
+exec {'install':
+  command  => 'sudo apt-get update ; sudo apt-get -y install nginx',
+  provider => shell,
+
 }
 
-file_line {'server_name _;':
-  path    => '/etc/nginx/sites-available/default',
-  line    => "\n\tlocation /redirect_me {\n\t\trewrite ^/redirect_me(.*)$ https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;\n\t}",
-  after   => 'server_name _;',
-  require => Package['nginx']
+exec {'Hello':
+  command  => 'echo "Hello World!" | sudo tee /var/www/html/index.html',
+  provider => shell,
 }
 
-file {'/var/www/html/404.html':
-  ensure  => 'present',
-  content => "Ceci n'est pas une page",
-  require => Package['nginx']
+exec {'sudo sed -i "s/listen 80 default_server;/listen 80 default_server;\\n\\tlocation \/redirect_me {\\n\\t\\treturn 301 https:\/\/blog.ehoneahobed.com\/;\\n\\t}/" /etc/nginx/sites-available/default':
+  provider => shell,
 }
 
-file_line {'server_name _; ':
-  path    => '/etc/nginx/sites-enabled/default',
-  line    => "\n\terror_page 404 /404.html;\n\tlocation = /404.html {\n\t\troot /var/www/html;\n\t\tinternal;\n\t}",
-  after   => 'server_name _;',
-  require => Package['nginx']
-}
-
-service {'nginx':
-  ensure  => 'running',
-  require => Package['nginx']
+exec {'run':
+  command  => 'sudo service nginx restart',
+  provider => shell,
 }
